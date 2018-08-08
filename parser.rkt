@@ -1,16 +1,17 @@
 #lang curly-fn racket/base
 
-(require racket/undefined)
-
 (require
  data/monad
  data/applicative
  megaparsack
  megaparsack/text
+ racket/match
  racket/string
  )
 
-(define (f . <* . g)
+(provide law/p)
+
+(define (<* f g)
   (do
       [x <- f]
       g
@@ -43,17 +44,20 @@
 (define ws/p
   (many/p (satisfy/p char-whitespace?)))
 
-(define (paragraph/p)
-  ; handle eof
+(define (lexeme p)
+  (<* p ws/p))
+
+(define (paragraph/parser)
   (define par
     (do
-        [c <- any-char/p]
-        (define next
-          (if (char=? c #\newline)
-              saw-newline
-              par))
+        [c <- (or/p any-char/p eof/p)]
+        (define-values (c- next)
+          (match c
+            [#\newline (values c saw-newline)]
+            [(? void?) (values #\newline (pure null))]
+            [_ (values c par)]))
         [cs <- next]
-        (pure (cons c cs))))
+        (pure (cons c- cs))))
   (define saw-newline
     (do
         [ws <- ws/p]
@@ -62,84 +66,84 @@
               (pure null)
               par))
         [cs <- next]
-        (pure (append ws cs))))
+        (pure (cons #\newline cs))))
    (do 
        [p <- par]
        ws/p
        (pure (list->string p))))
+(define paragraph/p (paragraph/parser))
 
 (define roman-numeral/p
-  (<* (many+/p (one-of/p '(#\i #\v #\x #\l #\d #\m) char-ci=?)) ws/p))
+  (lexeme (many+/p (one-of/p '(#\i #\v #\x #\l #\d #\m) char-ci=?))))
   
 (define ordinal-sign/p
-  (<* (one-of/p '(#\º #\o)) ws/p))
+  (lexeme (one-of/p '(#\º #\o))))
 
 (define (symbol/p str)
-  (do
-      [s <- (string/p str)]
-      ws/p
-      (pure s)))
+  (lexeme (string/p str)))
 
 (define (symbol-ci/p str)
-  (do
-      [s <- (string-ci/p str)]
-      ws/p
-      (pure s)))
+  (lexeme (string-ci/p str)))
+
+(define int/p
+  (lexeme integer/p))
 
 ;; law parser
 ; livro, subsecao, parte, etc, ver lei complementar 95
-(define titulo/p undefined)
-(define capitulo/p undefined)
-(define secao/p undefined)
+(define (make-item kind n text)
+  (cons (cons kind n) text))
+
+(define (make-item-parser kind del/p num/p)
+  (do
+      del/p
+      [n <- num/p]
+      [t <- paragraph/p]
+      (pure (make-item kind n t))))
+
+(define titulo/p
+  (make-item-parser 'titulo (symbol-ci/p "TÍTULO") roman-numeral/p))
+
+(define capitulo/p
+  (make-item-parser 'capitulo (symbol-ci/p "CAPÍTULO") roman-numeral/p))
+
+
+(define secao/p
+  (make-item-parser 'secao (symbol-ci/p "Seção") roman-numeral/p))
 
 (define artigo/p
-  (do
-      (symbol-ci/p "Art")
-      (symbol/p ".")
-      [n <- integer/p]
-      ws/p
-      ordinal-sign/p
-      [t <- (paragraph/p)]
-      (pure (cons (cons 'artigo n) t))))
+  (make-item-parser 'artigo
+                    (symbol-ci/p "Art.")
+                    (<* int/p ordinal-sign/p)))
 
-(define (paragrafo/p)
+(define (paragrafo/parser)
   (define unico/p
-    (<* (symbol-ci/p "Parágrafo único") (symbol/p ".")))
+    (do
+        (symbol-ci/p "Parágrafo")
+        (symbol-ci/p "único")
+        (symbol/p ".")
+        (pure 0)))
   (define nao-unico/p
     (do
         (symbol-ci/p "§")
-        [n <- integer/p]
-        ws/p
+        [n <- int/p]
         ordinal-sign/p
         (pure n)))
-  (do
-      [n <- (or/p nao-unico/p unico/p)]
-      [t <- (paragraph/p)]
-      (pure (cons (cons 'paragrafo (if (number? n) n 0)) t))))
+  (make-item-parser 'paragrafo void/p (or/p nao-unico/p unico/p)))
+(define paragrafo/p (paragrafo/parser))
 
 (define inciso/p
-  (do
-      [n <- roman-numeral/p]
-      (symbol/p "-")
-      [t <- (paragraph/p)]
-      (pure (cons (cons 'inciso n) t))))
-
+  (make-item-parser 'inciso void/p (<* roman-numeral/p
+                                       (symbol/p "-"))))
 (define alinea/p
-  (do
-      [n <- (satisfy/p char-alphabetic?)]
-      ws/p
-      (symbol/p ")")
-      [t <- (paragraph/p)]
-      (pure (cons (cons 'alinea n) t))))
+  (make-item-parser 'alinea void/p
+                    (<* (lexeme (satisfy/p char-alphabetic?))
+                        (symbol/p ")"))))
 
 (define item/p
-  (do
-      [n <- integer/p]
-      ws/p
-      [t <- (paragraph/p)]
-      (pure (cons (cons 'item n) t))))
+  (make-item-parser 'item void/p
+                    int/p))
 
-#;(define law/p
+(define law/p
   (many+/p
    (or/p titulo/p capitulo/p secao/p artigo/p
          paragrafo/p inciso/p alinea/p item/p)))
