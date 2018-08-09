@@ -11,7 +11,7 @@
 (require "parser.rkt"
          "print.rkt")
 
-(define input-format (make-parameter 'human))
+(define output-format (make-parameter 'raw))
 
 (define cmd-parser
   (command-line
@@ -19,14 +19,21 @@
    #:usage-help 
    "Parse Brazilian laws."
    "---------------------"
-   
+   #:once-any
+   [("-p" "--pollen") "Output to pollen representation"
+                      (output-format 'pollen)]
+   [("-r" "--raw") "Output parser representation"
+                   (output-format 'raw)]
    #:args (filename)
 
    filename))
 
-(define (file->law fp)
+(define (file->output fp output-fn)
   (either (compose1 displayln parse-error->string)
-          ->pollen
+          output-fn
           (parse-string law/p (file->string fp #:mode 'text) fp)))
 
-(file->law cmd-parser)
+(case (output-format)
+  [(pollen) (file->output cmd-parser ->pollen)]
+  [(raw) (file->output cmd-parser displayln)]
+  [else (displayln "ichi")])
