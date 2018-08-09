@@ -112,7 +112,7 @@
 
 (define artigo/p
   (make-item-parser 'artigo
-                    (symbol-ci/p "Art.")
+                    (try/p (symbol-ci/p "Art."))
                     (<* int/p ordinal-sign/p)))
 
 (define (paragrafo/parser)
