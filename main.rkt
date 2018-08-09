@@ -11,7 +11,7 @@
 (require "parser.rkt"
          "print.rkt")
 
-(define output-format (make-parameter 'raw))
+(define output-format (make-parameter 'sexp))
 
 (define cmd-parser
   (command-line
@@ -22,8 +22,8 @@
    #:once-any
    [("-p" "--pollen") "Output to pollen representation"
                       (output-format 'pollen)]
-   [("-r" "--raw") "Output parser representation"
-                   (output-format 'raw)]
+   [("-s" "--sexp") "Output parser sexp representation"
+                   (output-format 'sexp)]
    #:args (filename)
 
    filename))
@@ -35,5 +35,4 @@
 
 (case (output-format)
   [(pollen) (file->output cmd-parser ->pollen)]
-  [(raw) (file->output cmd-parser displayln)]
-  [else (displayln "ichi")])
+  [(sexp) (file->output cmd-parser displayln)])
