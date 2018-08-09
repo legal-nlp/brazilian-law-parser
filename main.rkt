@@ -8,7 +8,8 @@
  racket/file
  )
 
-(require "parser.rkt")
+(require "parser.rkt"
+         "print.rkt")
 
 (define input-format (make-parameter 'human))
 
@@ -25,7 +26,7 @@
 
 (define (file->law fp)
   (either (compose1 displayln parse-error->string)
-          displayln
+          ->pollen
           (parse-string law/p (file->string fp #:mode 'text) fp)))
 
 (file->law cmd-parser)
