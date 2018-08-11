@@ -79,6 +79,9 @@
 (define ordinal-sign/p
   (lexeme (one-of/p '(#\º #\o))))
 
+(define hyphen-sign/p
+  (lexeme (one-of/p '(#\- #\‒ #\– #\−))))
+
 (define (symbol/p str)
   (lexeme (string/p str)))
 
@@ -87,6 +90,16 @@
 
 (define int/p
   (lexeme integer/p))
+
+(define int-ordinal/p
+  (do
+      [n <- int/p]
+      (define ordinal-or-dot/p
+        (if (> n 9)
+            (symbol/p ".")
+            ordinal-sign/p))
+      ordinal-or-dot/p
+      (pure n)))
 
 ;; law parser
 ; livro, subsecao, parte, etc, ver lei complementar 95
@@ -112,8 +125,8 @@
 
 (define artigo/p
   (make-item-parser 'artigo
-                    (try/p (symbol-ci/p "Art."))
-                    (<* int/p ordinal-sign/p)))
+                    (symbol-ci/p "Art.")
+                    int-ordinal/p))
 
 (define (paragrafo/parser)
   (define unico/p
@@ -125,15 +138,14 @@
   (define nao-unico/p
     (do
         (symbol-ci/p "§")
-        [n <- int/p]
-        ordinal-sign/p
+        [n <- int-ordinal/p]
         (pure n)))
   (make-item-parser 'paragrafo void/p (or/p nao-unico/p unico/p)))
 (define paragrafo/p (paragrafo/parser))
 
 (define inciso/p
   (make-item-parser 'inciso void/p (<* roman-numeral/p
-                                       (symbol/p "-"))))
+                                       hyphen-sign/p)))
 (define alinea/p
   (make-item-parser 'alinea void/p
                     (<* (lexeme (satisfy/p char-alphabetic?))
@@ -145,5 +157,5 @@
 
 (define law/p
   (many+/p
-   (or/p titulo/p capitulo/p secao/p artigo/p
-         paragrafo/p inciso/p alinea/p item/p)))
+   (apply or/p (map try/p (list titulo/p capitulo/p secao/p artigo/p
+         paragrafo/p inciso/p alinea/p item/p)))))
