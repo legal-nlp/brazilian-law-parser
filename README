@@ -1,0 +1,18 @@
+# -*- mode:org -*-
+#TITLE: Brazilian law parser
+
+more or less according to lei complementar nº 95.
+
+* installation
+install [[https://racket-lang.org/][racket]] if you haven't already.
+
+run
+: raco pkg install megaparsack
+now you should have all dependencies installed.
+
+* usage
+#+BEGIN_SRC sh
+git clone this/repository
+cd this/repository
+racket main.rkt --help
+#+END_SRC
