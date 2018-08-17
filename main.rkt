@@ -1,4 +1,4 @@
-#lang racket/base
+#lang curly-fn racket/base
 
 (require
  data/either
@@ -12,7 +12,7 @@
          "print.rkt")
 
 (define (file->output fp output-fn)
-  (either (compose1 #{displayln % (current-output-port)}
+  (either (compose1 #{displayln % (current-error-port)}
                     parse-error->string)
           output-fn
           (parse-string law/p (file->string fp #:mode 'text) fp)))

@@ -156,6 +156,8 @@
                     int/p))
 
 (define law/p
-  (many+/p
-   (apply or/p (map try/p (list titulo/p capitulo/p secao/p artigo/p
-         paragrafo/p inciso/p alinea/p item/p)))))
+  (<*
+   (many+/p
+    (apply or/p (map try/p (list titulo/p capitulo/p secao/p artigo/p
+                                 paragrafo/p inciso/p alinea/p item/p))))
+   eof/p))
