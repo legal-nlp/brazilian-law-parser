@@ -1,12 +1,15 @@
 #lang curly-fn racket/base
 
 (require
- data/monad
  data/applicative
+ data/monad
  megaparsack
  megaparsack/text
+ racket/format
  racket/match
  racket/string
+ txexpr
+ xml
  )
 
 (provide law/p)
@@ -77,10 +80,13 @@
   (lexeme (many+/p (one-of/p '(#\i #\v #\x #\l #\d #\m) char-ci=?))))
   
 (define ordinal-sign/p
-  (lexeme (one-of/p '(#\º #\o))))
+  (lexeme (one-of/p '(#\º #\o #\°))))
+
+(define hyphen-like-characters
+  '(#\- #\‒ #\– #\−))
 
 (define hyphen-sign/p
-  (lexeme (one-of/p '(#\- #\‒ #\– #\−))))
+  (lexeme (one-of/p hyphen-like-characters)))
 
 (define (symbol/p str)
   (lexeme (string/p str)))
@@ -91,27 +97,30 @@
 (define int/p
   (lexeme integer/p))
 
-(define int-ordinal/p
-  (do
-      [n <- int/p]
-      (define ordinal-or-dot/p
-        (if (> n 9)
-            (symbol/p ".")
-            ordinal-sign/p))
-      ordinal-or-dot/p
-      (pure n)))
+(define (ordinal-or-period/p n)
+  (if (> n 9)
+      (symbol/p ".")
+      ordinal-sign/p))
+
+(define addend/p
+  (many/p (try/p
+           (*> (one-of/p hyphen-like-characters)
+               (lexeme (satisfy/p char-alphabetic?)))) #:max 1))
 
 ;; law parser
 ; livro, subsecao, parte, etc, ver lei complementar 95
-(define (make-item kind n text)
-  (cons (cons kind n) text))
+(define (make-item kind n addendum text)
+   (txexpr kind `((number ,(~a n))) (list text)))
 
-(define (make-item-parser kind del/p num/p)
+(define (make-item-parser kind del/p num/p
+                          [post-num/p (lambda (_) void/p)])
   (do
       del/p
       [n <- num/p]
+      [a <- addend/p]
+      [pn <- (post-num/p n)]
       [t <- paragraph/p]
-      (pure (make-item kind n t))))
+      (pure (make-item kind n a t))))
 
 (define titulo/p
   (make-item-parser 'titulo (symbol-ci/p "TÍTULO") roman-numeral/p))
@@ -126,34 +135,39 @@
 (define artigo/p
   (make-item-parser 'artigo
                     (symbol-ci/p "Art.")
-                    int-ordinal/p))
+                    int/p
+                    ordinal-or-period/p))
 
 (define (paragrafo/parser)
   (define unico/p
-    (do
-        (symbol-ci/p "Parágrafo")
-        (symbol-ci/p "único")
-        (symbol/p ".")
-        (pure 0)))
+    (make-item-parser 'paragrafo (*> (symbol-ci/p "Parágrafo")
+                                     (symbol-ci/p "único"))
+                                 (pure 0)
+                                 (lambda (_) (symbol/p "."))))
   (define nao-unico/p
-    (do
-        (symbol-ci/p "§")
-        [n <- int-ordinal/p]
-        (pure n)))
-  (make-item-parser 'paragrafo void/p (or/p nao-unico/p unico/p)))
+    (make-item-parser 'paragrafo
+                      (symbol-ci/p "§")
+                      int/p
+                      ordinal-or-period/p))
+  (or/p nao-unico/p unico/p))
 (define paragrafo/p (paragrafo/parser))
 
 (define inciso/p
-  (make-item-parser 'inciso void/p (<* roman-numeral/p
-                                       hyphen-sign/p)))
+  (make-item-parser 'inciso
+                    void/p
+                    roman-numeral/p
+                    (lambda (_) hyphen-sign/p)))
 (define alinea/p
-  (make-item-parser 'alinea void/p
-                    (<* (lexeme (satisfy/p char-alphabetic?))
-                        (symbol/p ")"))))
+  (make-item-parser 'alinea
+                    void/p
+                    (lexeme (satisfy/p char-alphabetic?))
+                    (lambda (_) (symbol/p ")"))))
 
 (define item/p
-  (make-item-parser 'item void/p
-                    int/p))
+  (make-item-parser 'item
+                    void/p
+                    int/p
+                    (lambda (_) hyphen-sign/p)))
 
 (define law/p
   (<*
