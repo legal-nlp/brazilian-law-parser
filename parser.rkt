@@ -6,13 +6,15 @@
  megaparsack
  megaparsack/text
  racket/format
+ racket/list
  racket/match
  racket/string
  txexpr
  xml
+ "brazilian-law.rkt"
  )
 
-(provide law/p)
+;(provide law/p)
 
 (define (<* f g)
   (do
@@ -102,76 +104,114 @@
       (symbol/p ".")
       ordinal-sign/p))
 
+(define lower-alpha-char/p
+  (lexeme
+   (satisfy/p (lambda (c) (and (char-alphabetic? c)
+                               (char-lower-case? c))))))
+
 (define addend/p
   (many/p (try/p
            (*> (one-of/p hyphen-like-characters)
                (lexeme (satisfy/p char-alphabetic?)))) #:max 1))
 
+(define (annotate-result/p sym p)
+  ; allows case matching in dispositivo/p
+  (do
+      [r <- p]
+      (pure (cons sym r))))
+
 ;; law parser
 ; livro, subsecao, parte, etc, ver lei complementar 95
-(define (make-item kind n addendum text)
-   (txexpr kind `((number ,(~a n))) (list text)))
+(define (make-item kind n addendum elems)
+   (txexpr kind `((number ,(~a n))) elems))
 
-(define (make-item-parser kind del/p num/p
+(define (make-item-parser kind num/p
                           [post-num/p (lambda (_) void/p)])
   (do
-      del/p
       [n <- num/p]
       [a <- addend/p]
       [pn <- (post-num/p n)]
       [t <- paragraph/p]
-      (pure (make-item kind n a t))))
+      (define children/p
+        (if (eq? kind 'item)
+            (pure null)
+            (many/p (dispositivo</p kind))))
+      [cs <- children/p]
+      (pure (make-item kind n a (cons t cs)))))
 
 (define titulo/p
-  (make-item-parser 'titulo (symbol-ci/p "TÍTULO") roman-numeral/p))
+  (make-item-parser 'titulo roman-numeral/p))
 
 (define capitulo/p
-  (make-item-parser 'capitulo (symbol-ci/p "CAPÍTULO") roman-numeral/p))
+  (make-item-parser 'capitulo roman-numeral/p))
 
 
 (define secao/p
-  (make-item-parser 'secao (symbol-ci/p "Seção") roman-numeral/p))
+  (make-item-parser 'secao roman-numeral/p))
+
+(define subsecao/p
+  (make-item-parser 'subsecao roman-numeral/p))
 
 (define artigo/p
   (make-item-parser 'artigo
-                    (symbol-ci/p "Art.")
+                    int/p
+                    ordinal-or-period/p))
+(define unico/p
+  (make-item-parser 'paragrafo
+                    (pure 0)
+                    (lambda (_) (symbol/p "."))))
+
+(define nao-unico/p
+  (make-item-parser 'paragrafo
                     int/p
                     ordinal-or-period/p))
 
-(define (paragrafo/parser)
-  (define unico/p
-    (make-item-parser 'paragrafo (*> (symbol-ci/p "Parágrafo")
-                                     (symbol-ci/p "único"))
-                                 (pure 0)
-                                 (lambda (_) (symbol/p "."))))
-  (define nao-unico/p
-    (make-item-parser 'paragrafo
-                      (symbol-ci/p "§")
-                      int/p
-                      ordinal-or-period/p))
-  (or/p nao-unico/p unico/p))
-(define paragrafo/p (paragrafo/parser))
-
-(define inciso/p
+(define (inciso/p r)
   (make-item-parser 'inciso
-                    void/p
-                    roman-numeral/p
+                    (pure r)
                     (lambda (_) hyphen-sign/p)))
-(define alinea/p
+(define (alinea/p l)
   (make-item-parser 'alinea
-                    void/p
-                    (lexeme (satisfy/p char-alphabetic?))
+                    (pure l)
                     (lambda (_) (symbol/p ")"))))
 
-(define item/p
+(define (item/p n)
   (make-item-parser 'item
-                    void/p
-                    int/p
+                    (pure n)
                     (lambda (_) hyphen-sign/p)))
 
+(define disp-prefix-parsers
+  (list (*> (symbol-ci/p "TÍTULO") (pure '(titulo)))
+        (*> (symbol-ci/p "CAPÍTULO") (pure '(capitulo)))
+        (*> (try/p (symbol-ci/p "Seção")) (pure '(secao)))
+        (*> (symbol-ci/p "Subseção") (pure '(subsecao)))
+        (*> (symbol-ci/p "Art.") (pure '(artigo)))
+        (or/p (*> (symbol/p "§") (pure '(paragrafo)))
+              (*> (*> (symbol-ci/p "Parágrafo") (symbol-ci/p "único"))
+                  (pure '(paragrafo-unico))))
+        (annotate-result/p 'inciso roman-numeral/p)
+        (annotate-result/p 'alinea lower-alpha-char/p)
+        (annotate-result/p 'item int/p)))
+
+(define (dispositivo</p kind)
+  (do
+      [w <- (apply or/p (drop disp-prefix-parsers (- (hash-count disp-hierarchy)
+                                                     -1
+                                                     (disp-order kind))))]
+      (define next/p
+        (case (car w)
+          [(titulo) titulo/p]
+          [(capitulo) capitulo/p]
+          [(secao) secao/p]
+          [(subsecao) subsecao/p]
+          [(artigo) artigo/p]
+          [(paragrafo) nao-unico/p]
+          [(paragrafo-unico) unico/p]
+          [(inciso) (inciso/p (cdr w))]
+          [(alinea) (alinea/p (cdr w))]
+          [(item) (item/p (cdr w))]))
+    next/p))
+
 (define law/p
-  (<*
-   (many+/p
-    (apply or/p (map try/p (list titulo/p capitulo/p secao/p artigo/p
-                                 paragrafo/p inciso/p alinea/p item/p))))
-   eof/p))
+  (*> ws/p
+      (<* (many+/p (dispositivo</p 'titulo)) eof/p)))
