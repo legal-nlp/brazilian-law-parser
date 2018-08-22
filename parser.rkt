@@ -1,6 +1,7 @@
 #lang curly-fn racket/base
 
 (require
+ data/functor
  data/applicative
  data/monad
  megaparsack
@@ -79,7 +80,7 @@
 (define paragraph/p (paragraph/parser))
 
 (define roman-numeral/p
-  (lexeme (many+/p (one-of/p '(#\i #\v #\x #\l #\d #\m) char-ci=?))))
+  (lexeme (map roman->int (many+/p (one-of/p '(#\I #\V #\X #\L #\C #\D #\M) char-ci=?)))))
   
 (define ordinal-sign/p
   (lexeme (one-of/p '(#\º #\o #\°))))
@@ -106,8 +107,9 @@
 
 (define lower-alpha-char/p
   (lexeme
-   (satisfy/p (lambda (c) (and (char-alphabetic? c)
-                               (char-lower-case? c))))))
+   (map alpha->int
+        (satisfy/p (lambda (c) (and (char-alphabetic? c)
+                                    (char-lower-case? c)))))))
 
 (define addend/p
   (many/p (try/p
@@ -123,7 +125,11 @@
 ;; law parser
 ; livro, subsecao, parte, etc, ver lei complementar 95
 (define (make-item kind n addendum elems)
-   (txexpr kind `((number ,(~a n))) elems))
+  (txexpr kind (cons (list 'number (number->string n))
+                     (if (null? addendum)
+                         addendum
+                         `((addendum ,(list->string addendum)))))
+          elems))
 
 (define (make-item-parser kind num/p
                           [post-num/p (lambda (_) void/p)])
@@ -177,7 +183,7 @@
 (define (item/p n)
   (make-item-parser 'item
                     (pure n)
-                    (lambda (_) hyphen-sign/p)))
+                    (lambda (_) (symbol/p ")"))))
 
 (define disp-prefix-parsers
   (list (*> (symbol-ci/p "TÍTULO") (pure '(titulo)))
@@ -212,5 +218,8 @@
     next/p))
 
 (define law/p
-  (*> ws/p
-      (<* (many+/p (dispositivo</p 'norma)) eof/p)))
+  (do
+      ws/p
+      [ds <- (many+/p (dispositivo</p 'norma))]
+      eof/p
+      (pure (xexpr->string (txexpr 'norma null ds)))))

@@ -9,7 +9,8 @@
 
 ; (hash Disp Int)
 (define disp-hierarchy
-  (for/hasheq ([d '(item alinea inciso paragrafo artigo subsecao secao capitulo titulo norma)]
+  (for/hasheq ([d '(item alinea inciso paragrafo artigo subsecao
+                         secao capitulo titulo norma)]
                [n (in-naturals 1)])
     (values d n)))
 
@@ -18,13 +19,13 @@
 
 (define (roman->int number)
   (define letter-values
-    (map cons '(#\M #\D #\C #\L #\X #\V #\I) '(1000 500 100 50 10 5 1)))
+    (hash #\M 1000 #\m 1000 #\D 500 #\d 500 #\C 100 #\c 100 #\L 50 #\l 50 #\X 10 #\x 10 #\V 5 #\v 5 #\I 1 #\i 1))
   (define (get-value letter)
-    (cdr (assq letter letter-values)))
-  (define lst (map get-value (string->list number)))
+    (hash-ref letter-values letter))
+  (define lst (map get-value number))
   (+ (last lst)
      (for/fold ((sum 0))
-       ((i (in-list lst)) (i+1 (in-list (cdr lst))))
+       ((i (in-list lst)) (i+1 (in-list (rest lst))))
        (+ sum
           (if (> i+1 i)
               (- i)
