@@ -9,7 +9,7 @@
 
 ; (hash Disp Int)
 (define disp-hierarchy
-  (for/hasheq ([d '(item alinea inciso paragrafo artigo subsecao secao capitulo titulo)]
+  (for/hasheq ([d '(item alinea inciso paragrafo artigo subsecao secao capitulo titulo norma)]
                [n (in-naturals 1)])
     (values d n)))
 

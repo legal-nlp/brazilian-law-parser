@@ -14,7 +14,7 @@
  "brazilian-law.rkt"
  )
 
-;(provide law/p)
+(provide law/p)
 
 (define (<* f g)
   (do
@@ -135,7 +135,7 @@
       (define children/p
         (if (eq? kind 'item)
             (pure null)
-            (many/p (dispositivo</p kind))))
+            (many/p (try/p (dispositivo</p kind)))))
       [cs <- children/p]
       (pure (make-item kind n a (cons t cs)))))
 
@@ -144,7 +144,6 @@
 
 (define capitulo/p
   (make-item-parser 'capitulo roman-numeral/p))
-
 
 (define secao/p
   (make-item-parser 'secao roman-numeral/p))
@@ -168,8 +167,8 @@
 
 (define (inciso/p r)
   (make-item-parser 'inciso
-                    (pure r)
-                    (lambda (_) hyphen-sign/p)))
+                    (pure r)))
+
 (define (alinea/p l)
   (make-item-parser 'alinea
                     (pure l)
@@ -183,20 +182,20 @@
 (define disp-prefix-parsers
   (list (*> (symbol-ci/p "TÍTULO") (pure '(titulo)))
         (*> (symbol-ci/p "CAPÍTULO") (pure '(capitulo)))
-        (*> (try/p (symbol-ci/p "Seção")) (pure '(secao)))
+        (*> (try/p (symbol-ci/p "SEÇÃO")) (pure '(secao)))
         (*> (symbol-ci/p "Subseção") (pure '(subsecao)))
         (*> (symbol-ci/p "Art.") (pure '(artigo)))
         (or/p (*> (symbol/p "§") (pure '(paragrafo)))
               (*> (*> (symbol-ci/p "Parágrafo") (symbol-ci/p "único"))
                   (pure '(paragrafo-unico))))
-        (annotate-result/p 'inciso roman-numeral/p)
+        (try/p (annotate-result/p 'inciso
+                                  (<* roman-numeral/p hyphen-sign/p)))
         (annotate-result/p 'alinea lower-alpha-char/p)
         (annotate-result/p 'item int/p)))
 
 (define (dispositivo</p kind)
   (do
       [w <- (apply or/p (drop disp-prefix-parsers (- (hash-count disp-hierarchy)
-                                                     -1
                                                      (disp-order kind))))]
       (define next/p
         (case (car w)
@@ -214,4 +213,4 @@
 
 (define law/p
   (*> ws/p
-      (<* (many+/p (dispositivo</p 'titulo)) eof/p)))
+      (<* (many+/p (dispositivo</p 'norma)) eof/p)))
