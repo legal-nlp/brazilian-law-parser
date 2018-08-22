@@ -1,13 +1,24 @@
 #lang racket/base
 
-(require racket/match "parser.rkt")
+(require
+ "parser.rkt"
+ racket/list
+ racket/match
+ racket/string
+ )
+
 (provide ->pollen)
 
-(define (print-item i)
+(define (print-elem i)
   (match i
-    [(cons (cons k _) t) (displayln (format "◊~a{~a}" k t))]
+    [(list* name attrs elems)
+     (let-values ([(elem-texts children) (splitf-at elems string?)])
+       (displayln (format "◊~a{~a}\n" name (string-trim
+                                          (string-join elem-texts)
+                                          #:left? #f)))
+       (for-each print-elem children))]
     [_ (error "broken.")]))
 
 (define (->pollen res)
   (displayln "#lang pollen\n\n")
-  (for-each print-item res))
+  (for-each print-elem res))

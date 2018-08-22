@@ -6,6 +6,7 @@
  megaparsack/text
  racket/cmdline
  racket/file
+ txexpr
  xml
  )
 
@@ -25,7 +26,7 @@
     (command-line
      #:program "legal-parser"
      #:usage-help 
-     "Parse Brazilian laws."
+     "Parse Brazilian laws to several output formats."
      "---------------------"
      #:once-any
      [("-x" "--xml") "Output XML representation. (DEFAULT)"
@@ -40,5 +41,5 @@
 
   (case (output-format)
     [(xml) (file->output cmd-parser (compose1 displayln xexpr->string))]
-    [(pollen) (file->output cmd-parser ->pollen)]
+    [(pollen) (file->output cmd-parser (compose1 ->pollen get-elements))]
     [(sexp) (file->output cmd-parser write)]))
