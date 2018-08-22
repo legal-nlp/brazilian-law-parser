@@ -1,8 +1,9 @@
 #lang curly-fn racket/base
 
 (require
- data/functor
+ "brazilian-law.rkt"
  data/applicative
+ data/functor
  data/monad
  megaparsack
  megaparsack/text
@@ -11,8 +12,6 @@
  racket/match
  racket/string
  txexpr
- xml
- "brazilian-law.rkt"
  )
 
 (provide law/p)
@@ -222,4 +221,4 @@
       ws/p
       [ds <- (many+/p (dispositivo</p 'norma))]
       eof/p
-      (pure (xexpr->string (txexpr 'norma null ds)))))
+      (pure (txexpr 'norma null ds))))
