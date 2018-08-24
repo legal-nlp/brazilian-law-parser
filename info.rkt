@@ -4,7 +4,7 @@
 
 (define deps '(["base" #:version "6.5"]
                "megaparsack"
-               "txexpr"))
+               ["txexpr" #:version "0.2"]))
 
 (define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"))
 

@@ -36,8 +36,8 @@
    xml
    )
   
-  (require "parser.rkt"
-           "print.rkt")
+  (require brazilian-law-parser/parser
+           brazilian-law-parser/print)
   
   (define (file->output fp output-fn)
     (either (compose1 #{displayln % (current-error-port)}

@@ -36,15 +36,7 @@ before_install:
   - bash ~/travis-racket/install-racket.sh
   - export PATH="${RACKET_DIR}/bin:${PATH}" #install-racket.sh can't set for us
 
-install:
-  - raco pkg install --deps search-auto
-
-before_script:
-
-# Here supply steps such as raco make, raco test, etc.  You can run
-# `raco pkg install --deps search-auto` to install any required
-# packages without it getting stuck on a confirmation prompt.
 script:
-  - raco pkg install --deps search-auto
+  - raco pkg install --deps search-auto --link brazilian-law-parser
   - raco setup -D --check-pkg-deps brazilian-law-parser
   - raco test -x -p brazilian-law-parser
