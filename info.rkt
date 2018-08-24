@@ -2,7 +2,9 @@
 
 (define collection "brazilian-law-parser")
 
-(define deps '("base" "megaparsack" "txexpr"))
+(define deps '(["base" #:version "6.5"]
+               "megaparsack"
+               "txexpr"))
 
 (define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"))
 
