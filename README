@@ -11,13 +11,17 @@ paragraph.
 * installation
 install [[https://racket-lang.org/][racket]] if you haven't already.
 
-run
-: raco pkg install megaparsack
-now you should have all dependencies installed.
-
-* usage
+then
 #+BEGIN_SRC sh
 git clone this/repository
 cd this/repository
-racket main.rkt --help
+raco pkg install --auto --link
 #+END_SRC
+
+* usage
+#+BEGIN_SRC sh
+raco brazilian-law-parse --help
+#+END_SRC
+
+*note*: the command is =brazilian-law-parse=, not
+ =brazilian-law-parser=.
