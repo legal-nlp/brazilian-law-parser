@@ -37,7 +37,6 @@ before_install:
   - export PATH="${RACKET_DIR}/bin:${PATH}" #install-racket.sh can't set for us
 
 script:
-  - pwd
-  - raco pkg install --deps search-auto --link brazilian-law-parser
+  - raco pkg install --deps search-auto --link
   - raco setup -D --check-pkg-deps brazilian-law-parser
   - raco test -x -p brazilian-law-parser
