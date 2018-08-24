@@ -4,7 +4,9 @@
 
 (define deps '(["base" #:version "6.5"]
                "megaparsack"
-               ["txexpr" #:version "0.2"]))
+               ["txexpr" #:version "0.2"]
+               "curly-fn-lib"
+               "functional-lib"))
 
 (define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"))
 
