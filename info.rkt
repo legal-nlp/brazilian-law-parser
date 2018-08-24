@@ -15,3 +15,6 @@
 (define version "0.1")
 
 (define pkg-authors '(bruno))
+
+(define raco-commands
+  '(("brazilian-law-parse" (submod brazilian-law-parser/main main) "parse Brazilian to different formats" #f)))
