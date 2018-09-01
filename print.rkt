@@ -16,7 +16,7 @@
                                           (string-join elem-texts)
                                           #:left? #f)))
        (for-each print-elem children))]
-    [_ (error "broken.")]))
+    [_ (error 'print-elem "broken." i)]))
 
 (define (->pollen res)
   (displayln "#lang pollen\n\n")
