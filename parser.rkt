@@ -1,7 +1,7 @@
 #lang curly-fn racket/base
 
 (require
- brazilian-law-parser/brazilian-law
+ brazilian-law/data
  data/applicative
  data/functor
  data/monad

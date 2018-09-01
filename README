@@ -1,9 +1,13 @@
 # -*- mode:org -*-
-#+TITLE: Brazilian law parser
+#+TITLE: Brazilian law
 
-more or less according to lei complementar nº 95. 
+definitions for Brazilian laws.
 
-input is a text file like this [[https://gist.github.com/odanoburu/101bb2181667dfed89529287f95650ee][one]]. we only care about the
+* parser
+parses laws in plaintext written more or less according to lei
+complementar nº 95.
+
+input is a text file like this [[https://gist.github.com/odanoburu/101bb2181667dfed89529287f95650ee][one]]. for now we only care about the
 dispositivos, i.e., título, artigo, etc. (scrap the title, preambulo,
 ementa, vetos, ...) each dispositivo's text must be in its own
 paragraph.
@@ -22,6 +26,3 @@ raco pkg install --auto --link
 #+BEGIN_SRC sh
 raco brazilian-law-parse --help
 #+END_SRC
-
-*note*: the command is =brazilian-law-parse=, not
- =brazilian-law-parser=.

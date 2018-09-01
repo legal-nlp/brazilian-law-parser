@@ -37,5 +37,5 @@ before_install:
 
 script:
   - raco pkg install --deps search-auto --link
-  - raco setup -D --check-pkg-deps brazilian-law-parser
-  - raco test -x -p brazilian-law-parser
+  - raco setup -D --check-pkg-deps brazilian-law
+  - raco test -x -p brazilian-law

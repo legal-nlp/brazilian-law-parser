@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require
- brazilian-law-parser/parser
+ brazilian-law/parser
  racket/list
  racket/match
  racket/string

@@ -36,8 +36,8 @@
    xml
    )
   
-  (require brazilian-law-parser/parser
-           brazilian-law-parser/print)
+  (require brazilian-law/parser
+           brazilian-law/print)
   
   (define (file->output fp output-fn)
     (either (compose1 #{displayln % (current-error-port)}
@@ -65,6 +65,6 @@
      filename))
 
   (case (output-format)
-    [(xml) (file->output cmd-parser (compose1 displayln xexpr->string))]
+    [(xml) (file->output cmd-parser #{write-xexpr % (current-output-port)})]
     [(pollen) (file->output cmd-parser (compose1 ->pollen get-elements))]
     [(sexp) (file->output cmd-parser write)]))
