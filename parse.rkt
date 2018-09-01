@@ -1,7 +1,7 @@
 #lang curly-fn racket/base
 
 (require
- brazilian-law-parser/brazilian-law
+ brazilian-law/data
  data/applicative
  data/functor
  data/monad
@@ -79,7 +79,7 @@
 (define paragraph/p (paragraph/parser))
 
 (define roman-numeral/p
-  (lexeme (map roman->int (many+/p (one-of/p '(#\I #\V #\X #\L #\C #\D #\M) char-ci=?)))))
+  (lexeme (map roman->integer (many+/p (one-of/p '(#\I #\V #\X #\L #\C #\D #\M) char-ci=?)))))
   
 (define ordinal-sign/p
   (lexeme (one-of/p '(#\º #\o #\°))))
@@ -106,7 +106,7 @@
 
 (define lower-alpha-char/p
   (lexeme
-   (map alpha->int
+   (map alpha->integer
         (satisfy/p (lambda (c) (and (char-alphabetic? c)
                                     (char-lower-case? c)))))))
 
@@ -143,6 +143,15 @@
             (many/p (try/p (dispositivo</p kind)))))
       [cs <- children/p]
       (pure (make-item kind n a (cons t cs)))))
+
+(define parte-counter 0)
+(define parte/p
+  (make-item-parser 'parte (begin
+                             (set! parte-counter (add1 parte-counter))
+                             (pure parte-counter))))
+
+(define livro/p
+  (make-item-parser 'livro roman-numeral/p))
 
 (define titulo/p
   (make-item-parser 'titulo roman-numeral/p))
@@ -184,8 +193,10 @@
                     (pure n)
                     (lambda (_) (symbol/p ")"))))
 
-(define disp-prefix-parsers
-  (list (*> (symbol-ci/p "TÍTULO") (pure '(titulo)))
+(define dispositivo-prefix-parsers
+  (list (try/p (*> (symbol-ci/p "PARTE") (pure '(parte))))
+        (*> (symbol-ci/p "LIVRO") (pure '(livro)))
+        (*> (symbol-ci/p "TÍTULO") (pure '(titulo)))
         (*> (symbol-ci/p "CAPÍTULO") (pure '(capitulo)))
         (*> (try/p (symbol-ci/p "SEÇÃO")) (pure '(secao)))
         (*> (symbol-ci/p "Subseção") (pure '(subsecao)))
@@ -200,10 +211,12 @@
 
 (define (dispositivo</p kind)
   (do
-      [w <- (apply or/p (drop disp-prefix-parsers (- (hash-count disp-hierarchy)
-                                                     (disp-order kind))))]
+      [w <- (apply or/p (drop dispositivo-prefix-parsers (- (hash-count dispositivo-hierarchy)
+                                                     (dispositivo->order kind))))]
       (define next/p
         (case (car w)
+          [(parte) parte/p]
+          [(livro) livro/p]
           [(titulo) titulo/p]
           [(capitulo) capitulo/p]
           [(secao) secao/p]

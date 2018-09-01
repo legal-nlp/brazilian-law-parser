@@ -1,10 +1,10 @@
 #lang scribble/manual
-@require[@for-label[brazilian-law-parser
+@require[@for-label[brazilian-law
                     racket/base]]
 
-@title{brazilian-law-parser}
+@title{brazilian-law}
 @author{bruno}
 
-@defmodule[brazilian-law-parser]
+@defmodule[brazilian-law]
 
 see README at git repository.

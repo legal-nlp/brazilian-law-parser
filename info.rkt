@@ -1,6 +1,6 @@
 #lang info
 
-(define collection "brazilian-law-parser")
+(define collection "brazilian-law")
 
 (define deps '(["base" #:version "6.5"]
                "megaparsack"
@@ -10,13 +10,13 @@
 
 (define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"))
 
-(define scribblings '(("scribblings/brazilian-law-parser.scrbl" ())))
+(define scribblings '(("scribblings/brazilian-law.scrbl" ())))
 
-(define pkg-desc "Parses Brazilian laws in plaintext format and prints them to other formats.")
+(define pkg-desc "Definitions for Brazilian laws in plaintext format. Can parse and print them to other formats.")
 
 (define version "0.1")
 
-(define pkg-authors '(bruno))
+(define pkg-authors '("bruno cuconato"))
 
 (define raco-commands
-  '(("brazilian-law-parse" (submod brazilian-law-parser/main main) "parse Brazilian to different formats" #f)))
+  '(("brazilian-law-parse" (submod brazilian-law/main main) "parse Brazilian law to different formats" #f)))
