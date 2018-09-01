@@ -36,7 +36,7 @@
    xml
    )
   
-  (require brazilian-law/parser
+  (require brazilian-law/parse
            brazilian-law/print)
   
   (define (file->output fp output-fn)
